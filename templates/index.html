@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% import "helpers/forms.html" as forms %}
+{% block title %}Welcome to Flask Tracking!{% endblock %}
+{% block content %}
+{{ super() }}
+<form action="/user" method="POST">
+<fieldset>
+<legend>Add A User</legend>
+{{ forms.render(user_form) }}
+<p><input type="Submit" value="Save User"></p>
+</fieldset>
+</form>
+
+
+<form action="/gen" method="POST">
+<fieldset>
+<legend>Make a Password</legend>
+{{ forms.render(gen_form) }}
+<p><input type="Submit" value="MAKE!!!"></p>
+</fieldset>
+</form>
+{% endblock content %}
