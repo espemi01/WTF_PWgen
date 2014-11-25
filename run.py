@@ -13,7 +13,7 @@ _cwd = dirname(abspath(__file__))
 
 SECRET_KEY = 'flask-session-insecure-secret-key'
 SQLALCHEMY_DATABASE_URI = 'sqlite:///' + join(_cwd, 'pw.db')
-SQLALCHEMY_ECHO = True
+#SQLALCHEMY_ECHO = True
 WTF_CSRF_SECRET_KEY = 'this-should-be-more-random'
 
 
@@ -54,7 +54,7 @@ class GenForm(Form):
     maxL = fields.IntegerField('Maximum Word Length  (4-7)', validators=[validators.required(), validators.NumberRange(min=4, max=7)])
     totL = fields.IntegerField('Maximum Totoal Length  (11-31)', validators=[validators.required(), validators.NumberRange(min=11, max=31)])
     
-    caps = fields.BooleanField()
+    caps = fields.BooleanField('Add Capital Letters')
     
     swap = fields.BooleanField('Substitute: (3 == E...$ == S...etc)')
     
@@ -72,7 +72,7 @@ def index():
                            gen_form=gen_form)
 
 
-@app.route("/user", methods=("POST", ))
+@app.route("/user", methods=("POST", "GET"))
 def add_user():
     form = UserForm()
     if form.validate_on_submit():
@@ -85,7 +85,7 @@ def add_user():
     return render_template("errors.html", form=form)
 
 
-@app.route("/gen", methods=("POST", ))
+@app.route("/gen", methods=("POST", "GET"))
 def get_param():
     form = GenForm()
     if form.validate_on_submit():
@@ -119,25 +119,27 @@ def make(form):
     minL = int(request.form['minL'])
     maxL = int(request.form['maxL'])
     totL = int(request.form['totL'])
+    s = request.form['swap']
+    c = request.form['caps']
     
     pw = ''
     tLen = 0
     
     for i in range(0,4):
-        word, t = getWord(minL, maxL, totL, tLen)
+        word, t = getWord(minL, maxL, totL, tLen, s, c)
 
         pw = word + ' ' + pw
         tLen = t
         
     return pw
     
-def getWord(minL, maxL, totL, tLen): #  returns a word to be appended to a string held in the above function
+def getWord(minL, maxL, totL, tLen, s, c): #  returns a word to be appended to a string held in the above function
                                      #  the word is pulled from a database, and checked that it meets the
                                      #  parameters.
     words = getDB()
     
     go = False
-    
+
     while go is False:
         index = random.randint(0,5000)
         word = words[index]
@@ -146,9 +148,65 @@ def getWord(minL, maxL, totL, tLen): #  returns a word to be appended to a strin
             if len(word) >= minL:
                 aLen = tLen + len(word)
                 if aLen < totL:
-                    tLen += len(word)
-                    go = True
+                    if request.form['swap'] == 'y':
+                        if request.form['caps'] == 'y':
+                            print('got caps + swap')
+                            word = caps(word)
+                            word = swap(word)
+                            tLen += len(word)
+                            go = True
+                        else:
+                            print('got swap')
+                            word = swap(word)
+                            tLen += len(word)
+                            go = True
+                    elif request.form['caps'] == 'y':
+                        print('got caps')
+                        word = caps(word)
+                        tLen += len(word)
+                        go = True
+                    else:
+                        tLen += len(word)
+                        go = True
     return word, tLen
+
+def swap(word):
+    ol = ['A','I','E','O','L','S']
+    sl = ['@','!','3','0','1','$']
+    
+    result = ''
+    
+    r = random.randint(0,4)
+    
+    slist = [ol[r],sl[r]]
+    
+    print(slist)
+    
+    for letter in word:
+        LETTER = letter.upper()
+        
+        if LETTER == slist[0]:
+            LETTER = slist[1]
+            result += LETTER
+        else:
+            result += letter
+    
+    print(result)
+    return result
+
+def caps(word):
+    result = ''
+    for letter in word:
+        r = random.randint(0,1)
+        if r == 1:
+            LETTER = letter.upper()
+            result += LETTER
+        else:
+            result += letter
+    print(result)
+    return result
+    
+    
 
 #//\\//\\//\\//\\Viewing the Users//\\//\\//\\//\\
 
